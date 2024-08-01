@@ -107,13 +107,13 @@ public class USBPrinterAdapter implements PrinterAdapter {
         this.mUSBManager = (UsbManager) this.mContext.getSystemService(Context.USB_SERVICE);
 
         int flag;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            flag = PendingIntent.FLAG_IMMUTABLE;
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S) {
+            flag = PendingIntent.FLAG_MUTABLE;
         } else {
-            flag = PendingIntent.FLAG_UPDATE_CURRENT;
+            flag = PendingIntent.FLAG_IMMUTABLE;
         }
 
-        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), flag);
+        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), flag | PendingIntent.FLAG_UPDATE_CURRENT);
 
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
