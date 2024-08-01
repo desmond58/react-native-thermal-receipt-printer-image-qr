@@ -21,7 +21,6 @@ import android.widget.Toast;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
-
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
@@ -37,11 +36,10 @@ import java.util.List;
 /**
  * Created by xiesubin on 2017/9/20.
  */
-
 public class USBPrinterAdapter implements PrinterAdapter {
+
     @SuppressLint("StaticFieldLeak")
     private static USBPrinterAdapter mInstance;
-
 
     private final String LOG_TAG = "RNUSBPrinter";
     private Context mContext;
@@ -107,7 +105,10 @@ public class USBPrinterAdapter implements PrinterAdapter {
     public void init(ReactApplicationContext reactContext, Callback successCallback, Callback errorCallback) {
         this.mContext = reactContext;
         this.mUSBManager = (UsbManager) this.mContext.getSystemService(Context.USB_SERVICE);
-        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        int flag = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
+        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), flag | PendingIntent.FLAG_UPDATE_CURRENT);
+
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
@@ -116,7 +117,6 @@ public class USBPrinterAdapter implements PrinterAdapter {
         Log.v(LOG_TAG, "RNUSBPrinter initialized");
         successCallback.invoke();
     }
-
 
     public void closeConnectionIfExists() {
         if (mUsbDeviceConnection != null) {
@@ -140,7 +140,6 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
         return lists;
     }
-
 
     @Override
     public void selectDevice(PrinterDeviceId printerDeviceId, Callback successCallback, Callback errorCallback) {
@@ -221,7 +220,6 @@ public class USBPrinterAdapter implements PrinterAdapter {
         return true;
     }
 
-
     public void printRawData(String data, Callback errorCallback) {
         final String rawData = data;
         Log.v(LOG_TAG, "start to print raw data " + data);
@@ -262,7 +260,6 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
     }
 
-
     @Override
     public void printImageData(final String imageUrl, int imageWidth, int imageHeight, Callback errorCallback) {
         final Bitmap bitmapImage = getBitmapFromURL(imageUrl);
@@ -288,8 +285,8 @@ public class USBPrinterAdapter implements PrinterAdapter {
                 mUsbDeviceConnection.bulkTransfer(mEndPoint, SELECT_BIT_IMAGE_MODE, SELECT_BIT_IMAGE_MODE.length, 100000);
 
                 // Set nL and nH based on the width of the image
-                byte[] row = new byte[]{(byte) (0x00ff & pixels[y].length)
-                        , (byte) ((0xff00 & pixels[y].length) >> 8)};
+                byte[] row = new byte[]{(byte) (0x00ff & pixels[y].length),
+                    (byte) ((0xff00 & pixels[y].length) >> 8)};
 
                 mUsbDeviceConnection.bulkTransfer(mEndPoint, row, row.length, 100000);
 
@@ -336,8 +333,8 @@ public class USBPrinterAdapter implements PrinterAdapter {
                 mUsbDeviceConnection.bulkTransfer(mEndPoint, SELECT_BIT_IMAGE_MODE, SELECT_BIT_IMAGE_MODE.length, 100000);
 
                 // Set nL and nH based on the width of the image
-                byte[] row = new byte[]{(byte) (0x00ff & pixels[y].length)
-                        , (byte) ((0xff00 & pixels[y].length) >> 8)};
+                byte[] row = new byte[]{(byte) (0x00ff & pixels[y].length),
+                    (byte) ((0xff00 & pixels[y].length) >> 8)};
 
                 mUsbDeviceConnection.bulkTransfer(mEndPoint, row, row.length, 100000);
 
