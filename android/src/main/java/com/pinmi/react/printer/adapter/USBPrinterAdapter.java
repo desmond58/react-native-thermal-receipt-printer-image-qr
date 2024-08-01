@@ -108,7 +108,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
         int flag;
         if (Build.VERSION.SDK_INT >= 34) {
-            flag = PendingIntent.FLAG_MUTABLE || PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT;
+            flag = PendingIntent.FLAG_IMMUTABLE || PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT;
         } else {
             flag = PendingIntent.FLAG_MUTABLE;
         }
