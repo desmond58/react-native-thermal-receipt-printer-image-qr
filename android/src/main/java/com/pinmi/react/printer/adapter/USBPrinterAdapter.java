@@ -101,11 +101,18 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
     };
 
- @SuppressLint("UnspecifiedImmutableFlag")
+    @SuppressLint("UnspecifiedImmutableFlag")
     public void init(ReactApplicationContext reactContext, Callback successCallback, Callback errorCallback) {
         this.mContext = reactContext;
         this.mUSBManager = (UsbManager) this.mContext.getSystemService(Context.USB_SERVICE);
-        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        Intent intent = new Intent(ACTION_USB_PERMISSION);
+        int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0;
+        if (Build.VERSION.SDK_INT >= 34) {
+            flags |= PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT;
+        }
+        this.mPermissionIntent = PendingIntent.getBroadcast(mContext, 0, intent, flags);
+
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
