@@ -20,6 +20,7 @@ import android.util.Log;
 import android.widget.Toast;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -108,7 +109,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
         // Determine the appropriate flag for the PendingIntent based on the API level
         int pendingIntentFlag;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33+
+        if (Build.VERSION.SDK_INT >= 33) {
             pendingIntentFlag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
         } else {
             pendingIntentFlag = PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
@@ -122,7 +123,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
 
         // Register the receiver with or without the RECEIVER_EXPORTED flag based on the API level
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33+
+        if (Build.VERSION.SDK_INT >= 33) { // API 33
             mContext.registerReceiver(mUsbDeviceReceiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             mContext.registerReceiver(mUsbDeviceReceiver, filter);
