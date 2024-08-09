@@ -123,7 +123,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
 
         // Register the receiver with or without the RECEIVER_EXPORTED flag based on the API level
-        if (Build.VERSION.SDK_INT >= 33) { // API 33
+        if (Build.VERSION.SDK_INT >= 34) { // API 34
             mContext.registerReceiver(mUsbDeviceReceiver, filter, Context.RECEIVER_EXPORTED);
         } else {
             mContext.registerReceiver(mUsbDeviceReceiver, filter);
