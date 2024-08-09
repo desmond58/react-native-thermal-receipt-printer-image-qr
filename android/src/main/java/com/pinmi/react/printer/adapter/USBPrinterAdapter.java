@@ -109,7 +109,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
         // Determine the appropriate flag for the PendingIntent based on the API level
         int pendingIntentFlag;
-        if (Build.VERSION.SDK_INT >= 33) {
+        if (Build.VERSION.SDK_INT >= 34) {
             pendingIntentFlag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
         } else {
             pendingIntentFlag = PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
