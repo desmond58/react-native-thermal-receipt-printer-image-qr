@@ -192,13 +192,17 @@ public class USBPrinterAdapter implements PrinterAdapter {
         return;
     }
 
-    private boolean openConnection() {
+    private boolean openConnection(Callback errorCallback) {
         if (mUsbDevice == null) {
-            Log.e(LOG_TAG, "USB Deivce is not initialized");
+            String errorMsg = "USB Device is not initialized";
+            Log.e(LOG_TAG, errorMsg);
+            errorCallback.invoke(errorMsg);  // Send error back to user
             return false;
         }
         if (mUSBManager == null) {
-            Log.e(LOG_TAG, "USB Manager is not initialized");
+            String errorMsg = "USB Manager is not initialized";
+            Log.e(LOG_TAG, errorMsg);
+            errorCallback.invoke(errorMsg);  // Send error back to user
             return false;
         }
 
@@ -214,11 +218,12 @@ public class USBPrinterAdapter implements PrinterAdapter {
                 if (ep.getDirection() == UsbConstants.USB_DIR_OUT) {
                     UsbDeviceConnection usbDeviceConnection = mUSBManager.openDevice(mUsbDevice);
                     if (usbDeviceConnection == null) {
-                        Log.e(LOG_TAG, "failed to open USB Connection");
+                        String errorMsg = "Failed to open USB Connection";
+                        Log.e(LOG_TAG, errorMsg);
+                        errorCallback.invoke(errorMsg);  // Send error back to user
                         return false;
                     }
                     if (usbDeviceConnection.claimInterface(usbInterface, true)) {
-
                         mEndPoint = ep;
                         mUsbInterface = usbInterface;
                         mUsbDeviceConnection = usbDeviceConnection;
@@ -226,7 +231,9 @@ public class USBPrinterAdapter implements PrinterAdapter {
                         return true;
                     } else {
                         usbDeviceConnection.close();
-                        Log.e(LOG_TAG, "failed to claim usb connection");
+                        String errorMsg = "Failed to claim USB connection";
+                        Log.e(LOG_TAG, errorMsg);
+                        errorCallback.invoke(errorMsg);  // Send error back to user
                         return false;
                     }
                 }
@@ -237,8 +244,8 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
     public void printRawData(String data, Callback errorCallback) {
         final String rawData = data;
-        Log.v(LOG_TAG, "start to print raw data " + data);
-        boolean isConnected = openConnection();
+        Log.v(LOG_TAG, "Start to print raw data " + data);
+        boolean isConnected = openConnection(errorCallback);  // Pass errorCallback
         if (isConnected) {
             Log.v(LOG_TAG, "Connected to device");
             new Thread(new Runnable() {
@@ -250,9 +257,9 @@ public class USBPrinterAdapter implements PrinterAdapter {
                 }
             }).start();
         } else {
-            String msg = "failed to connected to device";
+            String msg = "Failed to connect to device";
             Log.v(LOG_TAG, msg);
-            errorCallback.invoke(msg);
+            errorCallback.invoke(msg);  // Send error back to user
         }
     }
 
