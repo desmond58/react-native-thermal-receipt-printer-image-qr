@@ -246,21 +246,35 @@ public class USBPrinterAdapter implements PrinterAdapter {
         final String rawData = data;
         Log.v(LOG_TAG, "Start to print raw data " + data);
         boolean isConnected = openConnection(errorCallback);  // Pass errorCallback
-        if (isConnected) {
-            Log.v(LOG_TAG, "Connected to device");
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
-                    int b = mUsbDeviceConnection.bulkTransfer(mEndPoint, bytes, bytes.length, 100000);
-                    Log.i(LOG_TAG, "Return Status: b-->" + b);
-                }
-            }).start();
-        } else {
-            String msg = "Failed to connect to device";
-            Log.v(LOG_TAG, msg);
-            errorCallback.invoke(msg);  // Send error back to user
+        if (!isConnected) {
+            // Error handling already done in openConnection
+            return;  // Stop further execution if not connected
         }
+
+        Log.v(LOG_TAG, "Connected to device");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
+                int b = mUsbDeviceConnection.bulkTransfer(mEndPoint, bytes, bytes.length, 100000);
+                Log.i(LOG_TAG, "Return Status: b-->" + b);
+            }
+        }).start();
+        // if (isConnected) {
+        //     Log.v(LOG_TAG, "Connected to device");
+        //     new Thread(new Runnable() {
+        //         @Override
+        //         public void run() {
+        //             byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
+        //             int b = mUsbDeviceConnection.bulkTransfer(mEndPoint, bytes, bytes.length, 100000);
+        //             Log.i(LOG_TAG, "Return Status: b-->" + b);
+        //         }
+        //     }).start();
+        // } else {
+        //     String msg = "Failed to connect to device";
+        //     Log.v(LOG_TAG, msg);
+        //     errorCallback.invoke(msg);  // Send error back to user
+        // }
     }
 
     public static Bitmap getBitmapFromURL(String src) {
@@ -308,7 +322,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
                 // Set nL and nH based on the width of the image
                 byte[] row = new byte[]{(byte) (0x00ff & pixels[y].length),
-                     (byte) ((0xff00 & pixels[y].length) >> 8)};
+                    (byte) ((0xff00 & pixels[y].length) >> 8)};
 
                 mUsbDeviceConnection.bulkTransfer(mEndPoint, row, row.length, 100000);
 
@@ -356,7 +370,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
                 // Set nL and nH based on the width of the image
                 byte[] row = new byte[]{(byte) (0x00ff & pixels[y].length),
-                     (byte) ((0xff00 & pixels[y].length) >> 8)};
+                    (byte) ((0xff00 & pixels[y].length) >> 8)};
 
                 mUsbDeviceConnection.bulkTransfer(mEndPoint, row, row.length, 100000);
 
