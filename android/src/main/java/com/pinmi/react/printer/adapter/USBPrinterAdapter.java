@@ -306,7 +306,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
 
         Log.v(LOG_TAG, "start to print image data " + bitmapImage);
-        boolean isConnected = openConnection();
+        boolean isConnected = openConnection(errorCallback);
         if (isConnected) {
             Log.v(LOG_TAG, "Connected to device");
             int[][] pixels = getPixelsSlow(bitmapImage, imageWidth, imageHeight);
@@ -354,7 +354,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
 
         Log.v(LOG_TAG, "start to print image data " + bitmapImage);
-        boolean isConnected = openConnection();
+        boolean isConnected = openConnection(errorCallback);
         if (isConnected) {
             Log.v(LOG_TAG, "Connected to device");
             int[][] pixels = getPixelsSlow(bitmapImage, imageWidth, imageHeight);
