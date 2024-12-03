@@ -5,13 +5,13 @@ android {
     buildToolsVersion = "34.0.0"  // Update to the corresponding build tools version
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
         targetSdkVersion 34  // Updated to the latest target SDK version
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-
+        multiDexEnabled true    
     }
     buildTypes {
         release {
@@ -29,4 +29,5 @@ dependencies {
     api 'androidx.appcompat:appcompat:1.0.0'
     api "com.facebook.react:react-native:+"
     testImplementation 'junit:junit:4.12'
+    implementation 'androidx.multidex:multidex:2.0.1'
 }
