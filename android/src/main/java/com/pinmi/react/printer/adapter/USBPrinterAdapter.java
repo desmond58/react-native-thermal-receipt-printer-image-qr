@@ -91,6 +91,9 @@ public class USBPrinterAdapter implements PrinterAdapter {
                     } else {
                         if (usbDevice != null) {
                             Toast.makeText(context, "User refuses to obtain USB device permissions" + usbDevice.getDeviceName(), Toast.LENGTH_LONG).show();
+                            // Prompt for permission again if not granted
+                            Log.i(LOG_TAG, "Requesting permission again for device " + usbDevice.getDeviceId());
+                            mUSBManager.requestPermission(usbDevice, mPermissionIndent);
                         }
                     }
                 }
