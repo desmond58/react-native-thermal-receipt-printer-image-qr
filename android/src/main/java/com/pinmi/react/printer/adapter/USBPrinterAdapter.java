@@ -94,6 +94,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
                             // Prompt for permission again if not granted
                             Log.i(LOG_TAG, "Requesting permission again for device " + usbDevice.getDeviceId());
                             mUSBManager.requestPermission(usbDevice, mPermissionIndent);
+                            mUsbDevice = usbDevice;
                         }
                     }
                 }
