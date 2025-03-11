@@ -235,7 +235,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
     private boolean openConnection(Callback errorCallback) {
         if (mUsbDevice == null) {
-            String errorMsg = "USB Device is not initializedssss";
+            String errorMsg = "USB Device is not initialized. WHYYY";
             Log.e(LOG_TAG, errorMsg);
             errorCallback.invoke(errorMsg); // Send error back to user
             return false;
