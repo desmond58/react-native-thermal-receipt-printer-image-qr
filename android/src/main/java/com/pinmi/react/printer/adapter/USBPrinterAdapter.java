@@ -122,16 +122,19 @@ public class USBPrinterAdapter implements PrinterAdapter {
         this.mContext = reactContext;
         this.mUSBManager = (UsbManager) this.mContext.getSystemService(Context.USB_SERVICE);
 
-        // Determine the appropriate flag for the PendingIntent based on the API level
+        // Create explicit intent by setting the package and action
+        Intent explicitIntent = new Intent(ACTION_USB_PERMISSION);
+        explicitIntent.setPackage(mContext.getPackageName());
+
+        // Use mutable flag for PendingIntent
         int pendingIntentFlag;
         if (Build.VERSION.SDK_INT >= 31) { // Android 12+
-            pendingIntentFlag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
+            pendingIntentFlag = PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
         } else {
             pendingIntentFlag = PendingIntent.FLAG_UPDATE_CURRENT;
         }
 
-        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION),
-                pendingIntentFlag);
+        this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, explicitIntent, pendingIntentFlag);
 
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
