@@ -124,10 +124,10 @@ public class USBPrinterAdapter implements PrinterAdapter {
 
         // Determine the appropriate flag for the PendingIntent based on the API level
         int pendingIntentFlag;
-        if (Build.VERSION.SDK_INT >= 34) {
+        if (Build.VERSION.SDK_INT >= 31) { // Android 12+
             pendingIntentFlag = PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
         } else {
-            pendingIntentFlag = PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT;
+            pendingIntentFlag = PendingIntent.FLAG_UPDATE_CURRENT;
         }
 
         this.mPermissionIndent = PendingIntent.getBroadcast(mContext, 0, new Intent(ACTION_USB_PERMISSION),
@@ -138,10 +138,11 @@ public class USBPrinterAdapter implements PrinterAdapter {
         filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
 
-        // Register the receiver with or without the RECEIVER_EXPORTED flag based on the
-        // API level
-        if (Build.VERSION.SDK_INT >= 34) { // API 33
+        // Register the receiver with proper flags based on the API level
+        if (Build.VERSION.SDK_INT >= 34) { // Android 14+
             mContext.registerReceiver(mUsbDeviceReceiver, filter, Context.RECEIVER_EXPORTED);
+        } else if (Build.VERSION.SDK_INT >= 33) { // Android 13
+            mContext.registerReceiver(mUsbDeviceReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
         } else {
             mContext.registerReceiver(mUsbDeviceReceiver, filter);
         }
@@ -186,30 +187,47 @@ public class USBPrinterAdapter implements PrinterAdapter {
             Log.i(LOG_TAG, "already selected device, do not need repeat to connect");
             if (!mUSBManager.hasPermission(mUsbDevice)) {
                 closeConnectionIfExists();
+                // Request permission with additional logging
+                Log.d(LOG_TAG, "Requesting permission for device: " + mUsbDevice.getDeviceName());
                 mUSBManager.requestPermission(mUsbDevice, mPermissionIndent);
+                // For Android 14+, inform the user that they may need to grant permission manually
+                if (Build.VERSION.SDK_INT >= 34) {
+                    Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
+                    // We don't call the success callback immediately as the permission may not be granted yet
+                    return;
+                }
             }
             successCallback.invoke(new USBPrinterDevice(mUsbDevice).toRNWritableMap());
             return;
         }
+        
         closeConnectionIfExists();
         if (mUSBManager.getDeviceList().size() == 0) {
             errorCallback.invoke("Device list is empty, can not choose device");
             return;
         }
+        
         for (UsbDevice usbDevice : mUSBManager.getDeviceList().values()) {
             if (usbDevice.getVendorId() == usbPrinterDeviceId.getVendorId()
                     && usbDevice.getProductId() == usbPrinterDeviceId.getProductId()) {
                 Log.v(LOG_TAG, "request for device: vendor_id: " + usbPrinterDeviceId.getVendorId() + ", product_id: "
                         + usbPrinterDeviceId.getProductId());
                 closeConnectionIfExists();
+                mUsbDevice = usbDevice; // Important: set the device before requesting permission
+                Log.d(LOG_TAG, "Requesting permission for device: " + usbDevice.getDeviceName());
                 mUSBManager.requestPermission(usbDevice, mPermissionIndent);
+                // For Android 14+, additional handling
+                if (Build.VERSION.SDK_INT >= 34) {
+                    Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
+                    // Don't call success callback immediately on Android 14+ as we're waiting for permission
+                    return;
+                }
                 successCallback.invoke(new USBPrinterDevice(usbDevice).toRNWritableMap());
                 return;
             }
         }
 
         errorCallback.invoke("can not find specified device");
-        return;
     }
 
     private boolean openConnection(Callback errorCallback) {
