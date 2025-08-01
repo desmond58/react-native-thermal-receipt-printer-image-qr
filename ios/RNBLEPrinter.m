@@ -81,31 +81,48 @@ RCT_EXPORT_METHOD(printRawData:(NSString *)text
                   printerOptions:(NSDictionary *)options
                   fail:(RCTResponseSenderBlock)errorCallback) {
     @try {
-        !m_printer ? [NSException raise:@"Invalid connection" format:@"printRawData: Can't connect to printer"] : nil;
+        if (!m_printer) {
+            [NSException raise:@"Invalid connection" format:@"printRawData: Can't connect to printer"];
+        }
 
-        NSData *decodedData = [[NSData alloc] initWithBase64EncodedString:text options:0];
-        NSString *decodedString = [[NSString alloc] initWithData:decodedData encoding:NSUTF8StringEncoding];
-        
-        NSNumber* boldPtr = [options valueForKey:@"bold"];
-        NSNumber* alignCenterPtr = [options valueForKey:@"center"];
-
-        BOOL bold = (BOOL)[boldPtr intValue];
-        BOOL alignCenter = (BOOL)[alignCenterPtr intValue];
-
-        bold ? [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2108"] : [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2100"];
-        alignCenter ? [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6102"] : [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6101"];
-        [[PrinterSDK defaultPrinterSDK] printText:decodedString];
+        NSLog(@"Raw data: %@", text);
+        NSLog(@"Printer Options: %@", options);
 
         NSNumber* beepPtr = [options valueForKey:@"beep"];
         NSNumber* cutPtr = [options valueForKey:@"cut"];
+        BOOL beep = [beepPtr boolValue];
+        BOOL cut = [cutPtr boolValue];
 
-        BOOL beep = (BOOL)[beepPtr intValue];
-        BOOL cut = (BOOL)[cutPtr intValue];
+        // Optional: if you want to support styling
+        NSNumber* boldPtr = [options valueForKey:@"bold"];
+        NSNumber* alignCenterPtr = [options valueForKey:@"center"];
+        BOOL bold = [boldPtr boolValue];
+        BOOL alignCenter = [alignCenterPtr boolValue];
 
-        beep ? [[PrinterSDK defaultPrinterSDK] beep] : nil;
-        cut ? [[PrinterSDK defaultPrinterSDK] cutPaper] : nil;
+        if (bold) {
+            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2108"];
+        } else {
+            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2100"];
+        }
+
+        if (alignCenter) {
+            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6102"];
+        } else {
+            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6101"];
+        }
+
+        [[PrinterSDK defaultPrinterSDK] printText:text];
+
+        if (beep) {
+            [[PrinterSDK defaultPrinterSDK] beep];
+        }
+
+        if (cut) {
+            [[PrinterSDK defaultPrinterSDK] cutPaper];
+        }
 
     } @catch (NSException *exception) {
+        NSLog(@"Bluetooth Print Exception: %@", exception.reason);
         errorCallback(@[exception.reason]);
     }
 }
