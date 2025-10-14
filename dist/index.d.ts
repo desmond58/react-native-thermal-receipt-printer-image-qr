@@ -22,8 +22,8 @@ export interface PrinterImageOptions {
 }
 export interface IUSBPrinter {
   device_name: string;
-  vendor_id: string;
-  product_id: string;
+  vendor_id: number;
+  product_id: number;
 }
 export interface IBLEPrinter {
   device_name: string;
@@ -41,7 +41,7 @@ export declare enum ColumnAlignment {
 declare const USBPrinter: {
   init: () => Promise<void>;
   getDeviceList: () => Promise<IUSBPrinter[]>;
-  connectPrinter: (vendorId: string, productId: string) => Promise<IUSBPrinter>;
+  connectPrinter: (vendorId: number, productId: number) => Promise<IUSBPrinter>;
   closeConn: () => Promise<void>;
   printText: (text: string, opts?: PrinterOptions) => void;
   printBill: (text: string, opts?: PrinterOptions) => void;
