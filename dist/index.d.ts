@@ -67,13 +67,7 @@ declare const USBPrinter: {
    * 80mm => 46 character
    * 58mm => 30 character
    */
-  printColumnsText: (
-    texts: string[],
-    columnWidth: number[],
-    columnAlignment: ColumnAlignment[],
-    columnStyle: string[],
-    opts?: PrinterOptions
-  ) => void;
+  printColumnsText: (texts: string[], columnWidth: number[], columnAlignment: ColumnAlignment[], columnStyle: string[], opts?: PrinterOptions) => void;
 };
 declare const BLEPrinter: {
   init: () => Promise<void>;
@@ -104,24 +98,14 @@ declare const BLEPrinter: {
    * 80mm => 46 character
    * 58mm => 30 character
    */
-  printColumnsText: (
-    texts: string[],
-    columnWidth: number[],
-    columnAlignment: ColumnAlignment[],
-    columnStyle: string[],
-    opts?: PrinterOptions
-  ) => void;
+  printColumnsText: (texts: string[], columnWidth: number[], columnAlignment: ColumnAlignment[], columnStyle: string[], opts?: PrinterOptions) => void;
 };
 declare const NetPrinter: {
   init: () => Promise<void>;
   getDeviceList: () => Promise<INetPrinter[]>;
-  connectPrinter: (
-    host: string,
-    port: number,
-    timeout?: number | undefined
-  ) => Promise<INetPrinter>;
+  connectPrinter: (host: string, port: number, timeout?: number | undefined) => Promise<INetPrinter>;
   closeConn: () => Promise<void>;
-  printText: (text: string, opts?: {}) => void;
+  printText: (text: string, opts?: PrinterOptions) => void;
   printBill: (text: string, opts?: PrinterOptions) => void;
   /**
    * image url
@@ -145,13 +129,7 @@ declare const NetPrinter: {
    * 80mm => 46 character
    * 58mm => 30 character
    */
-  printColumnsText: (
-    texts: string[],
-    columnWidth: number[],
-    columnAlignment: ColumnAlignment[],
-    columnStyle?: string[],
-    opts?: PrinterOptions
-  ) => void;
+  printColumnsText: (texts: string[], columnWidth: number[], columnAlignment: ColumnAlignment[], columnStyle?: string[], opts?: PrinterOptions) => void;
 };
 declare const NetPrinterEventEmitter: NativeEventEmitter;
 export { COMMANDS, NetPrinter, BLEPrinter, USBPrinter, NetPrinterEventEmitter };
