@@ -207,7 +207,7 @@ var USBPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -219,7 +219,7 @@ var USBPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -233,7 +233,7 @@ var USBPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -247,8 +247,15 @@ var USBPrinter = {
     if (opts === void 0) {
       opts = {};
     }
-    return RNUSBPrinter.printRawData(textTo64Buffer(text, opts), function (error) {
-      return console.warn(error);
+    return new Promise(function (resolve, reject) {
+      RNUSBPrinter.printRawData(textTo64Buffer(text, opts), function (error) {
+        if (error) {
+          console.warn(error);
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
     });
   },
   printBill: function (text, opts) {
@@ -280,7 +287,7 @@ var USBPrinter = {
         (_b = opts === null || opts === void 0 ? void 0 : opts.imageHeight) !== null && _b !== void 0 ? _b : 0,
         function (error) {
           return console.warn(error);
-        }
+        },
       );
     }
   },
@@ -305,7 +312,7 @@ var USBPrinter = {
         (_b = opts === null || opts === void 0 ? void 0 : opts.imageHeight) !== null && _b !== void 0 ? _b : 0,
         function (error) {
           return console.warn(error);
-        }
+        },
       );
     }
   },
@@ -345,7 +352,7 @@ var BLEPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -357,7 +364,7 @@ var BLEPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -370,7 +377,7 @@ var BLEPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -404,7 +411,7 @@ var BLEPrinter = {
       var processedText = textPreprocessingIOS(
         text,
         (_a = opts === null || opts === void 0 ? void 0 : opts.cut) !== null && _a !== void 0 ? _a : true,
-        (_b = opts.beep) !== null && _b !== void 0 ? _b : true
+        (_b = opts.beep) !== null && _b !== void 0 ? _b : true,
       );
       RNBLEPrinter.printRawData(processedText.text, processedText.opts, function (error) {
         return console.warn(error);
@@ -439,7 +446,7 @@ var BLEPrinter = {
         (_b = opts === null || opts === void 0 ? void 0 : opts.imageHeight) !== null && _b !== void 0 ? _b : 0,
         function (error) {
           return console.warn(error);
-        }
+        },
       );
     }
   },
@@ -470,7 +477,7 @@ var BLEPrinter = {
         (_b = opts === null || opts === void 0 ? void 0 : opts.imageHeight) !== null && _b !== void 0 ? _b : 0,
         function (error) {
           return console.warn(error);
-        }
+        },
       );
     }
   },
@@ -522,7 +529,7 @@ var NetPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -534,7 +541,7 @@ var NetPrinter = {
         },
         function (error) {
           return reject(error);
-        }
+        },
       );
     });
   },
@@ -557,7 +564,7 @@ var NetPrinter = {
                 },
                 function (error) {
                   return reject(error);
-                }
+                },
               );
               return [3 /*break*/, 3];
             case 2:
@@ -601,7 +608,7 @@ var NetPrinter = {
       var processedText = textPreprocessingIOS(
         text,
         (_a = opts === null || opts === void 0 ? void 0 : opts.cut) !== null && _a !== void 0 ? _a : true,
-        (_b = opts.beep) !== null && _b !== void 0 ? _b : true
+        (_b = opts.beep) !== null && _b !== void 0 ? _b : true,
       );
       RNNetPrinter.printRawData(processedText.text, processedText.opts, function (error) {
         return console.warn(error);
@@ -633,7 +640,7 @@ var NetPrinter = {
         (_b = opts === null || opts === void 0 ? void 0 : opts.imageHeight) !== null && _b !== void 0 ? _b : 0,
         function (error) {
           return console.warn(error);
-        }
+        },
       );
     }
   },
@@ -658,7 +665,7 @@ var NetPrinter = {
         (_b = opts === null || opts === void 0 ? void 0 : opts.imageHeight) !== null && _b !== void 0 ? _b : 0,
         function (error) {
           return console.warn(error);
-        }
+        },
       );
     }
   },

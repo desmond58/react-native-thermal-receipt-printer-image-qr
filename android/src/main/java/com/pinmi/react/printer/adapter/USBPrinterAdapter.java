@@ -283,7 +283,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
         return true;
     }
 
-    public void printRawData(String data, Callback errorCallback) {
+public void printRawData(String data, Callback errorCallback) {
         final String rawData = data;
         Log.v(LOG_TAG, "Start to print raw data " + data);
         boolean isConnected = openConnection(errorCallback); // Pass errorCallback
@@ -296,27 +296,45 @@ public class USBPrinterAdapter implements PrinterAdapter {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
-                int b = mUsbDeviceConnection.bulkTransfer(mEndPoint, bytes, bytes.length, 100000);
-                Log.i(LOG_TAG, "Return Status: b-->" + b);
+                try {
+                    if (mUsbDeviceConnection == null) {
+                        String msg = "USB connection is null";
+                        Log.e(LOG_TAG, msg);
+                        errorCallback.invoke(msg);
+                        return;
+                    }
+
+                    if (mEndPoint == null) {
+                        String msg = "USB endpoint is null";
+                        Log.e(LOG_TAG, msg);
+                        errorCallback.invoke(msg);
+                        return;
+                    }
+
+                    byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
+
+                    int result = mUsbDeviceConnection.bulkTransfer(
+                            mEndPoint,
+                            bytes,
+                            bytes.length,
+                            100000
+                    );
+
+                    if (result < 0) {
+                        String msg = "Bulk transfer failed. Device may not be a printer.";
+                        Log.e(LOG_TAG, msg);
+                        errorCallback.invoke(msg);
+                    } else {
+                        Log.i(LOG_TAG, "Print success. Bytes sent: " + result);
+                    }
+
+                } catch (Exception e) {
+                    Log.e(LOG_TAG, "Printing error", e);
+                    errorCallback.invoke("Printing failed: " + e.getMessage());
+                }
+
             }
         }).start();
-        // if (isConnected) {
-        // Log.v(LOG_TAG, "Connected to device");
-        // new Thread(new Runnable() {
-        // @Override
-        // public void run() {
-        // byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
-        // int b = mUsbDeviceConnection.bulkTransfer(mEndPoint, bytes, bytes.length,
-        // 100000);
-        // Log.i(LOG_TAG, "Return Status: b-->" + b);
-        // }
-        // }).start();
-        // } else {
-        // String msg = "Failed to connect to device";
-        // Log.v(LOG_TAG, msg);
-        // errorCallback.invoke(msg); // Send error back to user
-        // }
     }
 
     public static Bitmap getBitmapFromURL(String src) {
