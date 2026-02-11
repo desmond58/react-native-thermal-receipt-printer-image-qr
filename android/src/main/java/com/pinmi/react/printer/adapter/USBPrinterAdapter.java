@@ -313,20 +313,12 @@ public void printRawData(String data, Callback errorCallback) {
 
                     byte[] bytes = Base64.decode(rawData, Base64.DEFAULT);
 
-                    int result = mUsbDeviceConnection.bulkTransfer(
+                    mUsbDeviceConnection.bulkTransfer(
                             mEndPoint,
                             bytes,
                             bytes.length,
                             100000
                     );
-
-                    if (result < 0) {
-                        String msg = "Bulk transfer failed. Device may not be a printer.";
-                        Log.e(LOG_TAG, msg);
-                        errorCallback.invoke(msg);
-                    } else {
-                        Log.i(LOG_TAG, "Print success. Bytes sent: " + result);
-                    }
 
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Printing error", e);
