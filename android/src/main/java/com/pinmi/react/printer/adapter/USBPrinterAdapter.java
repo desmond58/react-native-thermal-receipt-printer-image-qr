@@ -321,7 +321,6 @@ public void printRawData(String data, Callback errorCallback) {
                     );
 
                     Log.i(LOG_TAG, "Print completed successfully");
-                    errorCallback.invoke(); // Call with no params = success
 
                 } catch (Exception e) {
                     Log.e(LOG_TAG, "Printing error", e);
