@@ -19,7 +19,7 @@ RCT_EXPORT_METHOD(init:(RCTResponseSenderBlock)successCallback
         m_printer = [[NSObject alloc] init];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNetPrinterConnectedNotification:) name:@"NetPrinterConnected" object:nil];
         // API MISUSE: <CBCentralManager> can only accept this command while in the powered on state
-        [[PrinterSDK defaultPrinterSDK] scanPrintersWithCompletion:^(Printer* printer){}];
+        // [[PrinterSDK defaultPrinterSDK] scanPrintersWithCompletion:^(Printer* printer){}];
         successCallback(@[@"Init successful"]);
     } @catch (NSException *exception) {
         errorCallback(@[@"No bluetooth adapter available"]);
@@ -35,6 +35,7 @@ RCT_EXPORT_METHOD(getDeviceList:(RCTResponseSenderBlock)successCallback
                   fail:(RCTResponseSenderBlock)errorCallback) {
     @try {
         !_printerArray ? [NSException raise:@"Null pointer exception" format:@"Must call init function first"] : nil;
+        _printerArray = [NSMutableArray new];
         [[PrinterSDK defaultPrinterSDK] scanPrintersWithCompletion:^(Printer* printer){
             [_printerArray addObject:printer];
             NSMutableArray *mapped = [NSMutableArray arrayWithCapacity:[_printerArray count]];
@@ -81,45 +82,34 @@ RCT_EXPORT_METHOD(printRawData:(NSString *)text
                   printerOptions:(NSDictionary *)options
                   fail:(RCTResponseSenderBlock)errorCallback) {
     @try {
-        if (!m_printer) {
-            [NSException raise:@"Invalid connection" format:@"printRawData: Can't connect to printer"];
-        }
+        !m_printer ? [NSException raise:@"Invalid connection" format:@"printRawData: Can't connect to printer"] : nil;
 
         NSLog(@"Raw data: %@", text);
         NSLog(@"Printer Options: %@", options);
 
-        NSNumber* beepPtr = [options valueForKey:@"beep"];
-        NSNumber* cutPtr = [options valueForKey:@"cut"];
-        BOOL beep = [beepPtr boolValue];
-        BOOL cut = [cutPtr boolValue];
+        NSString *printString = text;
 
         // Optional: if you want to support styling
         NSNumber* boldPtr = [options valueForKey:@"bold"];
         NSNumber* alignCenterPtr = [options valueForKey:@"center"];
-        BOOL bold = [boldPtr boolValue];
-        BOOL alignCenter = [alignCenterPtr boolValue];
 
-        if (bold) {
-            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2108"];
-        } else {
-            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2100"];
-        }
+        BOOL bold = boldPtr ? (BOOL)[boldPtr intValue] : NO;
+        BOOL alignCenter = alignCenterPtr ? (BOOL)[alignCenterPtr intValue] : NO;
 
-        if (alignCenter) {
-            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6102"];
-        } else {
-            [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6101"];
-        }
 
-        [[PrinterSDK defaultPrinterSDK] printText:text];
+        bold ? [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2108"] : [[PrinterSDK defaultPrinterSDK] sendHex:@"1B2100"];
+        alignCenter ? [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6102"] : [[PrinterSDK defaultPrinterSDK] sendHex:@"1B6101"];
 
-        if (beep) {
-            [[PrinterSDK defaultPrinterSDK] beep];
-        }
+        [[PrinterSDK defaultPrinterSDK] printText:printString];
 
-        if (cut) {
-            [[PrinterSDK defaultPrinterSDK] cutPaper];
-        }
+        NSNumber* beepPtr = [options valueForKey:@"beep"];
+        NSNumber* cutPtr = [options valueForKey:@"cut"];
+
+        BOOL beep = beepPtr ? (BOOL)[beepPtr intValue] : NO;
+        BOOL cut = cutPtr ? (BOOL)[cutPtr intValue] : NO;
+
+        beep ? [[PrinterSDK defaultPrinterSDK] beep] : nil;
+        cut ? [[PrinterSDK defaultPrinterSDK] cutPaper] : nil;
 
     } @catch (NSException *exception) {
         NSLog(@"Bluetooth Print Exception: %@", exception.reason);
