@@ -19,7 +19,7 @@ RCT_EXPORT_METHOD(init:(RCTResponseSenderBlock)successCallback
         m_printer = [[NSObject alloc] init];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNetPrinterConnectedNotification:) name:@"NetPrinterConnected" object:nil];
         // API MISUSE: <CBCentralManager> can only accept this command while in the powered on state
-        // [[PrinterSDK defaultPrinterSDK] scanPrintersWithCompletion:^(Printer* printer){}];
+//        [[PrinterSDK defaultPrinterSDK] scanPrintersWithCompletion:^(Printer* printer){}];÷
         successCallback(@[@"Init successful"]);
     } @catch (NSException *exception) {
         errorCallback(@[@"No bluetooth adapter available"]);
@@ -35,17 +35,22 @@ RCT_EXPORT_METHOD(getDeviceList:(RCTResponseSenderBlock)successCallback
                   fail:(RCTResponseSenderBlock)errorCallback) {
     @try {
         !_printerArray ? [NSException raise:@"Null pointer exception" format:@"Must call init function first"] : nil;
+        // Reset array before each scan so we don't accumulate stale devices
         _printerArray = [NSMutableArray new];
         [[PrinterSDK defaultPrinterSDK] scanPrintersWithCompletion:^(Printer* printer){
             [_printerArray addObject:printer];
+        }];
+        // Wait for BLE scan to collect devices, then return the full list once
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             NSMutableArray *mapped = [NSMutableArray arrayWithCapacity:[_printerArray count]];
             [_printerArray enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+                Printer *printer = (Printer *)obj;
                 NSDictionary *dict = @{ @"device_name" : printer.name, @"inner_mac_address" : printer.UUIDString};
                 [mapped addObject:dict];
             }];
-            NSMutableArray *uniquearray = (NSMutableArray *)[[NSSet setWithArray:mapped] allObjects];;
+            NSMutableArray *uniquearray = (NSMutableArray *)[[NSSet setWithArray:mapped] allObjects];
             successCallback(@[uniquearray]);
-        }];
+        });
     } @catch (NSException *exception) {
         errorCallback(@[exception.reason]);
     }
