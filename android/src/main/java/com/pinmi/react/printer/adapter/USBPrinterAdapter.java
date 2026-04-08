@@ -54,6 +54,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
     private Callback mPendingPermissionErrorCallback;
     private static final String ACTION_USB_PERMISSION = "com.pinmi.react.USBPrinter.USB_PERMISSION";
     private static final String EVENT_USB_DEVICE_ATTACHED = "usbAttached";
+    private static final String EVENT_USB_DEVICE_DETACHED = "usbDetached";
 
     private final static char ESC_CHAR = 0x1B;
     private static final byte[] SELECT_BIT_IMAGE_MODE = { 0x1B, 0x2A, 33 };
@@ -72,18 +73,30 @@ public class USBPrinterAdapter implements PrinterAdapter {
         return mInstance;
     }
 
+    private UsbDevice getUsbDeviceFromIntent(Intent intent) {
+        if (Build.VERSION.SDK_INT >= 34) {
+            return intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class);
+        }
+        return intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+    }
+
+    private void emitUsbDeviceEvent(String eventName, UsbDevice usbDevice) {
+        if (mContext == null) {
+            return;
+        }
+
+        ((ReactApplicationContext) mContext)
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(eventName, usbDevice != null ? new USBPrinterDevice(usbDevice).toRNWritableMap() : null);
+    }
+
     private final BroadcastReceiver mUsbDeviceReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
-                    UsbDevice usbDevice;
-                    if (Build.VERSION.SDK_INT >= 34) {
-                        usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class);
-                    } else {
-                        usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    }
+                    UsbDevice usbDevice = getUsbDeviceFromIntent(intent);
 
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         if (usbDevice != null) {
@@ -109,20 +122,18 @@ public class USBPrinterAdapter implements PrinterAdapter {
                     clearPendingPermissionCallbacks();
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                UsbDevice usbDevice = getUsbDeviceFromIntent(intent);
                 if (mUsbDevice != null) {
                     Toast.makeText(context, "USB device has been turned off", Toast.LENGTH_LONG).show();
                     closeConnectionIfExists();
                     mUsbDevice = null;
                 }
+                emitUsbDeviceEvent(EVENT_USB_DEVICE_DETACHED, usbDevice);
                 clearPendingPermissionCallbacks();
             } else if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED.equals(action)
                     || UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 synchronized (this) {
-                    if (mContext != null) {
-                        ((ReactApplicationContext) mContext)
-                                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                                .emit(EVENT_USB_DEVICE_ATTACHED, null);
-                    }
+                    emitUsbDeviceEvent(EVENT_USB_DEVICE_ATTACHED, getUsbDeviceFromIntent(intent));
                 }
             }
         }
