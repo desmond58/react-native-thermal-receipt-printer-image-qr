@@ -103,6 +103,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
                 if (mUsbDevice != null) {
                     Toast.makeText(context, "USB device has been turned off", Toast.LENGTH_LONG).show();
                     closeConnectionIfExists();
+                    mUsbDevice = null;
                 }
             } else if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED.equals(action)
                     || UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
@@ -185,8 +186,19 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
 
         USBPrinterDeviceId usbPrinterDeviceId = (USBPrinterDeviceId) printerDeviceId;
+        UsbDevice matchedUsbDevice = null;
+        for (UsbDevice usbDevice : mUSBManager.getDeviceList().values()) {
+            if (usbDevice.getVendorId() == usbPrinterDeviceId.getVendorId()
+                    && usbDevice.getProductId() == usbPrinterDeviceId.getProductId()) {
+                matchedUsbDevice = usbDevice;
+                break;
+            }
+        }
+
         if (mUsbDevice != null && mUsbDevice.getVendorId() == usbPrinterDeviceId.getVendorId()
-                && mUsbDevice.getProductId() == usbPrinterDeviceId.getProductId()) {
+                && mUsbDevice.getProductId() == usbPrinterDeviceId.getProductId()
+                && matchedUsbDevice != null
+                && mUsbDevice.getDeviceId() == matchedUsbDevice.getDeviceId()) {
             Log.i(LOG_TAG, "already selected device, do not need repeat to connect");
             if (!mUSBManager.hasPermission(mUsbDevice)) {
                 closeConnectionIfExists();
@@ -209,25 +221,22 @@ public class USBPrinterAdapter implements PrinterAdapter {
             errorCallback.invoke("Device list is empty, can not choose device");
             return;
         }
-        
-        for (UsbDevice usbDevice : mUSBManager.getDeviceList().values()) {
-            if (usbDevice.getVendorId() == usbPrinterDeviceId.getVendorId()
-                    && usbDevice.getProductId() == usbPrinterDeviceId.getProductId()) {
-                Log.v(LOG_TAG, "request for device: vendor_id: " + usbPrinterDeviceId.getVendorId() + ", product_id: "
-                        + usbPrinterDeviceId.getProductId());
-                closeConnectionIfExists();
-                mUsbDevice = usbDevice; // Important: set the device before requesting permission
-                Log.d(LOG_TAG, "Requesting permission for device: " + usbDevice.getDeviceName());
-                mUSBManager.requestPermission(usbDevice, mPermissionIndent);
-                // For Android 14+, additional handling
-                if (Build.VERSION.SDK_INT >= 34) {
-                    Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
-                    // Don't call success callback immediately on Android 14+ as we're waiting for permission
-                    return;
-                }
-                successCallback.invoke(new USBPrinterDevice(usbDevice).toRNWritableMap());
+
+        if (matchedUsbDevice != null) {
+            Log.v(LOG_TAG, "request for device: vendor_id: " + usbPrinterDeviceId.getVendorId() + ", product_id: "
+                    + usbPrinterDeviceId.getProductId());
+            closeConnectionIfExists();
+            mUsbDevice = matchedUsbDevice; // Always refresh the selected device after a re-plug.
+            Log.d(LOG_TAG, "Requesting permission for device: " + matchedUsbDevice.getDeviceName());
+            mUSBManager.requestPermission(matchedUsbDevice, mPermissionIndent);
+            // For Android 14+, additional handling
+            if (Build.VERSION.SDK_INT >= 34) {
+                Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
+                // Don't call success callback immediately on Android 14+ as we're waiting for permission
                 return;
             }
+            successCallback.invoke(new USBPrinterDevice(matchedUsbDevice).toRNWritableMap());
+            return;
         }
 
         errorCallback.invoke("can not find specified device");
@@ -252,35 +261,47 @@ public class USBPrinterAdapter implements PrinterAdapter {
             return true;
         }
 
-        UsbInterface usbInterface = mUsbDevice.getInterface(0);
-        for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
-            final UsbEndpoint ep = usbInterface.getEndpoint(i);
-            if (ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-                if (ep.getDirection() == UsbConstants.USB_DIR_OUT) {
-                    UsbDeviceConnection usbDeviceConnection = mUSBManager.openDevice(mUsbDevice);
-                    if (usbDeviceConnection == null) {
-                        String errorMsg = "Failed to open USB Connection";
-                        Log.e(LOG_TAG, errorMsg);
-                        errorCallback.invoke(errorMsg); // Send error back to user
-                        return false;
-                    }
+        if (mUsbDevice.getInterfaceCount() <= 0) {
+            String errorMsg = "USB device has no interfaces";
+            Log.e(LOG_TAG, errorMsg);
+            errorCallback.invoke(errorMsg);
+            return false;
+        }
+
+        UsbDeviceConnection usbDeviceConnection = mUSBManager.openDevice(mUsbDevice);
+        if (usbDeviceConnection == null) {
+            String errorMsg = "Failed to open USB Connection";
+            Log.e(LOG_TAG, errorMsg);
+            errorCallback.invoke(errorMsg); // Send error back to user
+            return false;
+        }
+
+        for (int interfaceIndex = 0; interfaceIndex < mUsbDevice.getInterfaceCount(); interfaceIndex++) {
+            UsbInterface usbInterface = mUsbDevice.getInterface(interfaceIndex);
+            if (usbInterface == null) {
+                continue;
+            }
+
+            for (int endpointIndex = 0; endpointIndex < usbInterface.getEndpointCount(); endpointIndex++) {
+                final UsbEndpoint ep = usbInterface.getEndpoint(endpointIndex);
+                if (ep.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK
+                        && ep.getDirection() == UsbConstants.USB_DIR_OUT) {
                     if (usbDeviceConnection.claimInterface(usbInterface, true)) {
                         mEndPoint = ep;
                         mUsbInterface = usbInterface;
                         mUsbDeviceConnection = usbDeviceConnection;
                         Log.i(LOG_TAG, "Device connected");
                         return true;
-                    } else {
-                        usbDeviceConnection.close();
-                        String errorMsg = "Failed to claim USB connection";
-                        Log.e(LOG_TAG, errorMsg);
-                        errorCallback.invoke(errorMsg); // Send error back to user
-                        return false;
                     }
                 }
             }
         }
-        return true;
+
+        usbDeviceConnection.close();
+        String errorMsg = "No writable bulk endpoint found on USB device";
+        Log.e(LOG_TAG, errorMsg);
+        errorCallback.invoke(errorMsg);
+        return false;
     }
 
 public void printRawData(String data, Callback errorCallback) {
