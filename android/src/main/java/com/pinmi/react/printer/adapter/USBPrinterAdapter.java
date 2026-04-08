@@ -50,6 +50,8 @@ public class USBPrinterAdapter implements PrinterAdapter {
     private UsbDeviceConnection mUsbDeviceConnection;
     private UsbInterface mUsbInterface;
     private UsbEndpoint mEndPoint;
+    private Callback mPendingPermissionSuccessCallback;
+    private Callback mPendingPermissionErrorCallback;
     private static final String ACTION_USB_PERMISSION = "com.pinmi.react.USBPrinter.USB_PERMISSION";
     private static final String EVENT_USB_DEVICE_ATTACHED = "usbAttached";
 
@@ -90,6 +92,9 @@ public class USBPrinterAdapter implements PrinterAdapter {
                                             + ", vendor_id: " + usbDevice.getVendorId() + " product_id: "
                                             + usbDevice.getProductId());
                             mUsbDevice = usbDevice;
+                            if (mPendingPermissionSuccessCallback != null) {
+                                mPendingPermissionSuccessCallback.invoke(new USBPrinterDevice(usbDevice).toRNWritableMap());
+                            }
                         }
                     } else {
                         if (usbDevice != null) {
@@ -97,7 +102,11 @@ public class USBPrinterAdapter implements PrinterAdapter {
                                     "User refuses to obtain USB device permissions" + usbDevice.getDeviceName(),
                                     Toast.LENGTH_LONG).show();
                         }
+                        if (mPendingPermissionErrorCallback != null) {
+                            mPendingPermissionErrorCallback.invoke("USB permission denied");
+                        }
                     }
+                    clearPendingPermissionCallbacks();
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 if (mUsbDevice != null) {
@@ -105,6 +114,7 @@ public class USBPrinterAdapter implements PrinterAdapter {
                     closeConnectionIfExists();
                     mUsbDevice = null;
                 }
+                clearPendingPermissionCallbacks();
             } else if (UsbManager.ACTION_USB_ACCESSORY_ATTACHED.equals(action)
                     || UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 synchronized (this) {
@@ -165,6 +175,11 @@ public class USBPrinterAdapter implements PrinterAdapter {
         }
     }
 
+    private void clearPendingPermissionCallbacks() {
+        mPendingPermissionSuccessCallback = null;
+        mPendingPermissionErrorCallback = null;
+    }
+
     public List<PrinterDevice> getDeviceList(Callback errorCallback) {
         List<PrinterDevice> lists = new ArrayList<>();
         if (mUSBManager == null) {
@@ -202,15 +217,15 @@ public class USBPrinterAdapter implements PrinterAdapter {
             Log.i(LOG_TAG, "already selected device, do not need repeat to connect");
             if (!mUSBManager.hasPermission(mUsbDevice)) {
                 closeConnectionIfExists();
+                mPendingPermissionSuccessCallback = successCallback;
+                mPendingPermissionErrorCallback = errorCallback;
                 // Request permission with additional logging
                 Log.d(LOG_TAG, "Requesting permission for device: " + mUsbDevice.getDeviceName());
                 mUSBManager.requestPermission(mUsbDevice, mPermissionIndent);
-                // For Android 14+, inform the user that they may need to grant permission manually
                 if (Build.VERSION.SDK_INT >= 34) {
                     Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
-                    // We don't call the success callback immediately as the permission may not be granted yet
-                    return;
                 }
+                return;
             }
             successCallback.invoke(new USBPrinterDevice(mUsbDevice).toRNWritableMap());
             return;
@@ -227,15 +242,17 @@ public class USBPrinterAdapter implements PrinterAdapter {
                     + usbPrinterDeviceId.getProductId());
             closeConnectionIfExists();
             mUsbDevice = matchedUsbDevice; // Always refresh the selected device after a re-plug.
-            Log.d(LOG_TAG, "Requesting permission for device: " + matchedUsbDevice.getDeviceName());
-            mUSBManager.requestPermission(matchedUsbDevice, mPermissionIndent);
-            // For Android 14+, additional handling
-            if (Build.VERSION.SDK_INT >= 34) {
-                Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
-                // Don't call success callback immediately on Android 14+ as we're waiting for permission
+            if (mUSBManager.hasPermission(matchedUsbDevice)) {
+                successCallback.invoke(new USBPrinterDevice(matchedUsbDevice).toRNWritableMap());
                 return;
             }
-            successCallback.invoke(new USBPrinterDevice(matchedUsbDevice).toRNWritableMap());
+            mPendingPermissionSuccessCallback = successCallback;
+            mPendingPermissionErrorCallback = errorCallback;
+            Log.d(LOG_TAG, "Requesting permission for device: " + matchedUsbDevice.getDeviceName());
+            mUSBManager.requestPermission(matchedUsbDevice, mPermissionIndent);
+            if (Build.VERSION.SDK_INT >= 34) {
+                Log.i(LOG_TAG, "On Android 14+, you may need to manually grant USB permissions in settings");
+            }
             return;
         }
 
